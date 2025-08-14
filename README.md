@@ -14,12 +14,12 @@ A simple command-line todo application built with Go and Cobra that helps you ma
 
 ### Download from Releases
 
-Download the latest binary for your platform from the [releases page](https://github.com/your-username/todo/releases).
+Download the latest binary for your platform from the [releases page](https://github.com/ali-chapman/todo/releases).
 
 #### Linux/macOS
 ```bash
 # Download and install (replace with actual download URL)
-wget https://github.com/your-username/todo/releases/latest/download/todo-linux-amd64
+wget https://github.com/ali-chapman/todo/releases/latest/download/todo-linux-amd64
 chmod +x todo-linux-amd64
 sudo mv todo-linux-amd64 /usr/local/bin/todo
 ```
@@ -30,7 +30,7 @@ Download `todo-windows-amd64.exe` and place it in your PATH.
 ### Build from Source
 
 ```bash
-git clone https://github.com/your-username/todo.git
+git clone https://github.com/ali-chapman/todo.git
 cd todo
 go build -o todo .
 ```
