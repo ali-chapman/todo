@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"os"
 	"strconv"
+	"strings"
 )
 
 var removeFlag bool
@@ -36,8 +37,9 @@ var rootCmd = &cobra.Command{
 			}
 			removeTodo(idx)
 		} else if len(args) > 0 {
-			fmt.Println("Adding todo:", args[0])
-			addTodo(args[0])
+			todo := strings.Join(args, " ")
+			fmt.Println("Adding todo:", todo)
+			addTodo(todo)
 		} else {
 			listTodos(doneFlag)
 		}

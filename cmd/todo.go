@@ -13,7 +13,7 @@ func listTodos(done bool) {
 	if done {
 		path = donePath()
 	}
-	readFile, err := os.Open(path)
+	readFile, err := os.OpenFile(path, os.O_RDONLY|os.O_CREATE, 0644)
 
 	if err != nil {
 		log.Fatalf("Error opening todo file: %v", err)
@@ -132,9 +132,19 @@ func getTodos(file *os.File) []string {
 }
 
 func todoPath() string {
-	return os.Getenv("HOME") + "/.config/.todo"
+	envPath := os.Getenv("TODO_PATH")
+	if envPath != "" {
+		return envPath
+	} else {
+		return os.Getenv("HOME") + "/.config/.todo"
+	}
 }
 
 func donePath() string {
-	return os.Getenv("HOME") + "/.config/.done"
+	envPath := os.Getenv("DONE_PATH")
+	if envPath != "" {
+		return envPath
+	} else {
+		return os.Getenv("HOME") + "/.config/.done"
+	}
 }
