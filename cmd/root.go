@@ -8,48 +8,79 @@ import (
 	"strings"
 )
 
-var removeFlag bool
+var completeFlag bool
+var deleteFlag bool
 var editFlag bool
-var doneFlag bool
+var statusFlag string
+var showCreatedAtFlag bool
+var showCompletedAtFlag bool
+var showTagsFlag bool
+var tagFilterFlag string
 
 var rootCmd = &cobra.Command{
 	Use:   "todo",
 	Short: "A simple CLI todo application",
 	Long:  "Todo is a command line application that allows you to manage your tasks efficiently.",
 	Run: func(cmd *cobra.Command, args []string) {
+		format := todoFormat{
+			status:          statusFlag,
+			showCreatedAt:   showCreatedAtFlag,
+			showCompletedAt: showCompletedAtFlag,
+			showTags:        showTagsFlag,
+		}
 		if editFlag && len(args) > 0 {
 			idx, err := strconv.Atoi(args[0])
+
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "Invalid index: %v\n", err)
 				os.Exit(1)
 			}
+
 			if len(args) < 2 {
 				fmt.Fprintln(os.Stderr, "Please provide a new todo item to edit.")
 				os.Exit(1)
 			}
+
 			newTodo := args[1]
 			editTodo(idx, newTodo)
-		} else if removeFlag && len(args) > 0 {
-			idx, err := strconv.Atoi(args[0])
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Invalid index: %v\n", err)
-				os.Exit(1)
-			}
-			removeTodo(idx)
+		} else if completeFlag {
+			idx := parseIndex(args)
+			completeTodo(idx)
+		} else if deleteFlag {
+			idx := parseIndex(args)
+			deleteTodo(idx)
 		} else if len(args) > 0 {
 			todo := strings.Join(args, " ")
-			fmt.Println("Adding todo:", todo)
 			addTodo(todo)
-		} else {
-			listTodos(doneFlag)
 		}
+		listTodos(format, tagFilterFlag)
 	},
 }
 
+func parseIndex(args []string) int {
+	if len(args) == 0 {
+		fmt.Fprintln(os.Stderr, "Please provide an index.")
+		os.Exit(1)
+	}
+
+	idx, err := strconv.Atoi(args[0])
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Invalid index: %v\n", err)
+		os.Exit(1)
+	}
+
+	return idx
+}
+
 func init() {
-	rootCmd.Flags().BoolVarP(&removeFlag, "remove", "r", false, "Remove todo by index")
+	rootCmd.Flags().BoolVarP(&completeFlag, "complete", "r", false, "Complete todo by index")
 	rootCmd.Flags().BoolVarP(&editFlag, "edit", "e", false, "Edit todo by index")
-	rootCmd.Flags().BoolVarP(&doneFlag, "done", "d", false, "List completed todos")
+	rootCmd.Flags().BoolVarP(&showCreatedAtFlag, "created", "c", false, "Show creation date of todos")
+	rootCmd.Flags().BoolVarP(&showCompletedAtFlag, "completed", "C", false, "Show completion date of todos")
+	rootCmd.Flags().BoolVarP(&showTagsFlag, "show-tags", "t", false, "Show tags of todos")
+	rootCmd.Flags().StringVarP(&statusFlag, "status", "s", "pending", "Filter todos by status (all, done, pending)")
+	rootCmd.Flags().StringVarP(&tagFilterFlag, "tag", "T", "", "Filter todos by tag")
+	rootCmd.Flags().BoolVarP(&deleteFlag, "delete", "d", false, "Delete todo by index")
 }
 
 func Execute() {
