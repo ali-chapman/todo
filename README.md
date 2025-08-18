@@ -1,13 +1,14 @@
 # Todo CLI
 
 A simple command-line todo application built with Go and Cobra that helps you manage your tasks efficiently.
+A simple todo CLI built with Go and Sqlite. 
 
 ## Features
 
-- Add, edit, and remove todo items
+- Add, edit, complete and remove todo items
 - List active and completed todos
 - Automatic timestamping of completed tasks
-- Customizable file locations via environment variables
+- Customizable database file locations via environment variables
 - Cross-platform support (Linux, macOS, Windows)
 
 ## Installation
@@ -46,14 +47,20 @@ todo
 
 #### Add a todo
 ```bash
-todo "Buy groceries"
-todo "Finish project documentation"
+todo Buy groceries
+todo Finish project documentation
 ```
 
-#### Remove a todo (mark as complete)
+#### Add a todo with tags
 ```bash
-todo -r 0  # Remove todo at index 0
-todo --remove 1  # Remove todo at index 1
+todo Write tests for @project1
+```
+All words that start with a '@' symbol will be stored as tags on the todo.
+
+#### Complete a todo
+```bash
+todo -d 0  # Remove todo at index 0
+todo --done 1  # Remove todo at index 1
 ```
 
 #### Edit a todo
@@ -64,8 +71,32 @@ todo --edit 1 "New description"
 
 #### List completed todos
 ```bash
-todo -d
-todo --done
+todo -sd
+todo --status done
+```
+
+#### List all todos
+```bash
+todo -sa
+todo --status all
+```
+
+#### Show creation date
+```bash
+todo -c
+todo --created
+```
+
+#### Show completion date
+```bash
+todo -C
+todo --completed
+```
+
+#### Hide tags
+```bash
+todo -n
+todo --hide-tags
 ```
 
 ### Examples
@@ -99,15 +130,12 @@ $ todo -e 0 "Write comprehensive unit tests"
 
 ### File Locations
 
-By default, todos are stored in:
-- Active todos: `~/.config/.todo`
-- Completed todos: `~/.config/.done`
+By default, the sqlite database file is stored in: `~/.config/.todo.db`
 
-You can customize these locations using environment variables:
+You can customize this using an environment variable:
 
 ```bash
-export TODO_PATH="/path/to/your/todo/file"
-export DONE_PATH="/path/to/your/done/file"
+export TODO_PATH="/path/to/your/todo/database_file"
 ```
 
 ## Command Reference
@@ -116,6 +144,13 @@ export DONE_PATH="/path/to/your/done/file"
 |---------|------|-------------|
 | `todo` | | List all active todos |
 | `todo "item"` | | Add a new todo item |
-| `todo -r <index>` | `--remove` | Mark todo at index as complete |
+| `todo "item @tag1 @tag2"` | | Add a new todo item with tags |
+| `todo -d <index>` | `--done` | Mark todo at index as complete |
 | `todo -e <index> "text"` | `--edit` | Edit todo at index |
-| `todo -d` | `--done` | List completed todos with timestamps |
+| `todo -x <index>` | `--remove` | Remove todo at index from database, THIS CANNOT BE UNDONE |
+| `todo -sd` | `--status done` | List completed todos |
+| `todo -sa` | `--status all` | List all todos |
+| `todo -c` | `--created` | Display relative creation time |
+| `todo -C` | `--completed` | Display relative completion time |
+| `todo -n` | `--hide-tags` | Do not display tags for each todo |
+| `todo -T mytag` | `--tag mytag` | Filter todos by tag |

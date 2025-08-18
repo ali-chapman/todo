@@ -81,14 +81,14 @@ func parseIndex(args []string) int {
 }
 
 func init() {
-	rootCmd.Flags().BoolVarP(&completeFlag, "complete", "r", false, "Complete todo by index")
+	rootCmd.Flags().BoolVarP(&completeFlag, "done", "d", false, "Complete todo by index")
 	rootCmd.Flags().BoolVarP(&editFlag, "edit", "e", false, "Edit todo by index")
 	rootCmd.Flags().BoolVarP(&showCreatedAtFlag, "created", "c", false, "Show creation date of todos")
 	rootCmd.Flags().BoolVarP(&showCompletedAtFlag, "completed", "C", false, "Show completion date of todos")
 	rootCmd.Flags().BoolVarP(&hideTagsFlag, "hide-tags", "n", false, "Hide tags of todos")
-	rootCmd.Flags().StringVarP(&statusFlag, "status", "s", "pending", "Filter todos by status (all, done, pending)")
+	rootCmd.Flags().StringVarP(&statusFlag, "status", "s", "pending", "Filter todos by status (all|a, done|d, pending|p)")
 	rootCmd.Flags().StringVarP(&tagFilterFlag, "tag", "T", "", "Filter todos by tag")
-	rootCmd.Flags().BoolVarP(&deleteFlag, "delete", "d", false, "Delete todo by index")
+	rootCmd.Flags().BoolVarP(&deleteFlag, "delete", "x", false, "Delete todo by index")
 }
 
 func Execute() {
