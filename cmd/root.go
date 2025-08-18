@@ -14,7 +14,7 @@ var editFlag bool
 var statusFlag string
 var showCreatedAtFlag bool
 var showCompletedAtFlag bool
-var showTagsFlag bool
+var hideTagsFlag bool
 var tagFilterFlag string
 
 var rootCmd = &cobra.Command{
@@ -22,11 +22,19 @@ var rootCmd = &cobra.Command{
 	Short: "A simple CLI todo application",
 	Long:  "Todo is a command line application that allows you to manage your tasks efficiently.",
 	Run: func(cmd *cobra.Command, args []string) {
+		statusMap := map[string]string{
+			"a":       "all",
+			"all":     "all",
+			"d":       "done",
+			"done":    "done",
+			"p":       "pending",
+			"pending": "pending",
+		}
 		format := todoFormat{
-			status:          statusFlag,
+			status:          statusMap[statusFlag],
 			showCreatedAt:   showCreatedAtFlag,
 			showCompletedAt: showCompletedAtFlag,
-			showTags:        showTagsFlag,
+			showTags:        !hideTagsFlag,
 		}
 		if editFlag && len(args) > 0 {
 			idx, err := strconv.Atoi(args[0])
@@ -77,7 +85,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&editFlag, "edit", "e", false, "Edit todo by index")
 	rootCmd.Flags().BoolVarP(&showCreatedAtFlag, "created", "c", false, "Show creation date of todos")
 	rootCmd.Flags().BoolVarP(&showCompletedAtFlag, "completed", "C", false, "Show completion date of todos")
-	rootCmd.Flags().BoolVarP(&showTagsFlag, "show-tags", "t", false, "Show tags of todos")
+	rootCmd.Flags().BoolVarP(&hideTagsFlag, "hide-tags", "n", false, "Hide tags of todos")
 	rootCmd.Flags().StringVarP(&statusFlag, "status", "s", "pending", "Filter todos by status (all, done, pending)")
 	rootCmd.Flags().StringVarP(&tagFilterFlag, "tag", "T", "", "Filter todos by tag")
 	rootCmd.Flags().BoolVarP(&deleteFlag, "delete", "d", false, "Delete todo by index")

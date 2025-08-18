@@ -8,6 +8,8 @@ import (
 	"log"
 	"os"
 	"strings"
+	"text/tabwriter"
+	"time"
 )
 
 var DB_PATH = databasePath()
@@ -32,13 +34,6 @@ type todoFormat struct {
 	showCreatedAt   bool
 	showCompletedAt bool
 	showTags        bool
-}
-
-var defaultFormat = todoFormat{
-	status:          Pending,
-	showCreatedAt:   false,
-	showCompletedAt: false,
-	showTags:        false,
 }
 
 func listTodos(format todoFormat, tagFilter string) {
@@ -86,27 +81,48 @@ func listTodos(format todoFormat, tagFilter string) {
 	if err := rows.Err(); err != nil {
 		log.Fatal(err)
 	}
+
+	if len(todos) == 0 {
+		return
+	}
+
+	// Create a tabwriter for aligned output
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
+	defer w.Flush()
+
 	for _, t := range todos {
-		printTodo(t, format)
+		printTodo(w, t, format)
 	}
 }
 
-func printTodo(t todo, format todoFormat) {
-	status := " "
-	if t.Done {
-		status = "x"
+func printTodo(w *tabwriter.Writer, t todo, format todoFormat) {
+	var columns []string
+
+	if format.status == All {
+		status := " "
+		if t.Done {
+			status = "x"
+		}
+		columns = append(columns, fmt.Sprintf("[%s]", status))
 	}
-	var displayMessage string = fmt.Sprintf("[%s] %d: %s", status, t.ID, t.Title)
-	if format.showCreatedAt && t.CreatedAt.Valid {
-		displayMessage += fmt.Sprintf(" (Created: %s)", t.CreatedAt.String)
-	}
-	if format.showCompletedAt && t.CompletedAt.Valid {
-		displayMessage += fmt.Sprintf(" (Completed: %s)", t.CompletedAt.String)
-	}
+
+	columns = append(columns, fmt.Sprintf("%d", t.ID))
+	columns = append(columns, t.Title)
+
 	if format.showTags {
-		displayMessage += fmt.Sprintf(" (Tags: %v)", t.Tags)
+		tagsStr := fmt.Sprintf("%v", t.Tags)
+		columns = append(columns, tagsStr)
 	}
-	fmt.Println(displayMessage)
+
+	if format.showCreatedAt && t.CreatedAt.Valid {
+		columns = append(columns, fmt.Sprintf("Created: %s", formatRelativeTime(t.CreatedAt.String)))
+	}
+
+	if format.showCompletedAt && t.CompletedAt.Valid {
+		columns = append(columns, fmt.Sprintf("Completed: %s", formatRelativeTime(t.CompletedAt.String)))
+	}
+
+	fmt.Fprintln(w, strings.Join(columns, "\t"))
 }
 
 func addTodo(todo string) {
@@ -238,6 +254,60 @@ func editTodo(idx int, newTodo string) {
 	} else {
 		fmt.Printf("Updated todo %d to: %s\n", idx, newTodo)
 	}
+}
+
+func formatRelativeTime(timestamp string) string {
+	t, err := time.Parse("2006-01-02T15:04:05Z", timestamp)
+	if err != nil {
+		return timestamp
+	}
+
+	now := time.Now()
+	diff := now.Sub(t)
+
+	if diff < time.Minute {
+		return "just now"
+	}
+	if diff < time.Hour {
+		minutes := int(diff.Minutes())
+		if minutes == 1 {
+			return "1 minute ago"
+		}
+		return fmt.Sprintf("%d minutes ago", minutes)
+	}
+	if diff < 24*time.Hour {
+		hours := int(diff.Hours())
+		if hours == 1 {
+			return "1 hour ago"
+		}
+		return fmt.Sprintf("%d hours ago", hours)
+	}
+	if diff < 7*24*time.Hour {
+		days := int(diff.Hours() / 24)
+		if days == 1 {
+			return "yesterday"
+		}
+		return fmt.Sprintf("%d days ago", days)
+	}
+	if diff < 30*24*time.Hour {
+		weeks := int(diff.Hours() / (24 * 7))
+		if weeks == 1 {
+			return "1 week ago"
+		}
+		return fmt.Sprintf("%d weeks ago", weeks)
+	}
+	if diff < 365*24*time.Hour {
+		months := int(diff.Hours() / (24 * 30))
+		if months == 1 {
+			return "1 month ago"
+		}
+		return fmt.Sprintf("%d months ago", months)
+	}
+	years := int(diff.Hours() / (24 * 365))
+	if years == 1 {
+		return "1 year ago"
+	}
+	return fmt.Sprintf("%d years ago", years)
 }
 
 func extractTags(todo string) (string, []string) {
