@@ -45,7 +45,7 @@ func listTodos(format todoFormat, tagFilter string) {
 
 	// Prepare the SQL query
 	query := "SELECT id, title, done, created_at, completed_at, tags FROM todos"
-	var args []interface{}
+	var args []any
 
 	conditions := []string{}
 	if format.status != All {
@@ -90,9 +90,37 @@ func listTodos(format todoFormat, tagFilter string) {
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	defer w.Flush()
 
+	// Print column headers
+	printHeaders(w, format)
+
 	for _, t := range todos {
 		printTodo(w, t, format)
 	}
+}
+
+func printHeaders(w *tabwriter.Writer, format todoFormat) {
+	var headers []string
+
+	if format.status == All {
+		headers = append(headers, "Status")
+	}
+
+	headers = append(headers, "ID")
+	headers = append(headers, "Title")
+
+	if format.showTags {
+		headers = append(headers, "Tags")
+	}
+
+	if format.showCreatedAt {
+		headers = append(headers, "Created")
+	}
+
+	if format.showCompletedAt {
+		headers = append(headers, "Completed")
+	}
+
+	fmt.Fprintln(w, strings.Join(headers, "\t"))
 }
 
 func printTodo(w *tabwriter.Writer, t todo, format todoFormat) {
@@ -114,12 +142,20 @@ func printTodo(w *tabwriter.Writer, t todo, format todoFormat) {
 		columns = append(columns, tagsStr)
 	}
 
-	if format.showCreatedAt && t.CreatedAt.Valid {
-		columns = append(columns, fmt.Sprintf("Created: %s", formatRelativeTime(t.CreatedAt.String)))
+	if format.showCreatedAt {
+		var createdAt string = ""
+		if t.CreatedAt.Valid {
+			createdAt = formatRelativeTime(t.CreatedAt.String)
+		}
+		columns = append(columns, createdAt)
 	}
 
-	if format.showCompletedAt && t.CompletedAt.Valid {
-		columns = append(columns, fmt.Sprintf("Completed: %s", formatRelativeTime(t.CompletedAt.String)))
+	if format.showCompletedAt {
+		var completedAt string = ""
+		if t.CompletedAt.Valid {
+			completedAt = formatRelativeTime(t.CompletedAt.String)
+		}
+		columns = append(columns, completedAt)
 	}
 
 	fmt.Fprintln(w, strings.Join(columns, "\t"))
@@ -282,32 +318,7 @@ func formatRelativeTime(timestamp string) string {
 		}
 		return fmt.Sprintf("%d hours ago", hours)
 	}
-	if diff < 7*24*time.Hour {
-		days := int(diff.Hours() / 24)
-		if days == 1 {
-			return "yesterday"
-		}
-		return fmt.Sprintf("%d days ago", days)
-	}
-	if diff < 30*24*time.Hour {
-		weeks := int(diff.Hours() / (24 * 7))
-		if weeks == 1 {
-			return "1 week ago"
-		}
-		return fmt.Sprintf("%d weeks ago", weeks)
-	}
-	if diff < 365*24*time.Hour {
-		months := int(diff.Hours() / (24 * 30))
-		if months == 1 {
-			return "1 month ago"
-		}
-		return fmt.Sprintf("%d months ago", months)
-	}
-	years := int(diff.Hours() / (24 * 365))
-	if years == 1 {
-		return "1 year ago"
-	}
-	return fmt.Sprintf("%d years ago", years)
+	return t.Format("Jan 2")
 }
 
 func extractTags(todo string) (string, []string) {
