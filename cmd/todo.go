@@ -13,6 +13,7 @@ import (
 )
 
 var DB_PATH = databasePath()
+var dbInstance *todoDb
 
 const (
 	Pending = "pending"
@@ -36,13 +37,11 @@ type todoFormat struct {
 	showTags        bool
 }
 
-func listTodos(format todoFormat, tagFilter string) {
-	db, err := connect()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+type todoDb struct {
+	db *sql.DB
+}
 
+func (todoDb *todoDb) listTodos(format todoFormat, tagFilter string) {
 	// Prepare the SQL query
 	query := "SELECT id, title, done, created_at, completed_at, tags FROM todos"
 	var args []any
@@ -53,7 +52,7 @@ func listTodos(format todoFormat, tagFilter string) {
 		args = append(args, format.status == Done)
 	}
 	if tagFilter != "" {
-		conditions = append(conditions, "JSON_EXTRACT(tags, '$') LIKE ?")
+		conditions = append(conditions, "tags LIKE ?")
 		args = append(args, "%\""+tagFilter+"\"%")
 	}
 
@@ -61,7 +60,7 @@ func listTodos(format todoFormat, tagFilter string) {
 		query += " WHERE " + strings.Join(conditions, " AND ")
 	}
 
-	rows, err := db.Query(query, args...)
+	rows, err := todoDb.db.Query(query, args...)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -161,15 +160,9 @@ func printTodo(w *tabwriter.Writer, t todo, format todoFormat) {
 	fmt.Fprintln(w, strings.Join(columns, "\t"))
 }
 
-func addTodo(todo string) {
-	db, err := connect()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
+func (todoDb *todoDb) addTodo(todo string) {
 	// Prepare the SQL statement, insert todo as title, done as false, and created_at as current timestamp
-	stmt, err := db.Prepare("INSERT INTO todos (title, done, tags) VALUES (?, 0, ?)")
+	stmt, err := todoDb.db.Prepare("INSERT INTO todos (title, done, tags) VALUES (?, 0, ?)")
 
 	if err != nil {
 		log.Fatal(err)
@@ -190,15 +183,9 @@ func addTodo(todo string) {
 	fmt.Printf("Added todo: %s\n", todo)
 }
 
-func completeTodo(idx int) {
-	db, err := connect()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
+func (todoDb *todoDb) completeTodo(idx int) {
 	// Prepare the SQL statement to mark todo as done
-	stmt, err := db.Prepare("UPDATE todos SET done = 1, completed_at = CURRENT_TIMESTAMP WHERE id = ?")
+	stmt, err := todoDb.db.Prepare("UPDATE todos SET done = 1, completed_at = CURRENT_TIMESTAMP WHERE id = ?")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -222,15 +209,9 @@ func completeTodo(idx int) {
 	}
 }
 
-func deleteTodo(idx int) {
-	db, err := connect()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
+func (todoDb *todoDb) deleteTodo(idx int) {
 	// Prepare the SQL statement to delete the todo
-	stmt, err := db.Prepare("DELETE FROM todos WHERE id = ?")
+	stmt, err := todoDb.db.Prepare("DELETE FROM todos WHERE id = ?")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -254,13 +235,7 @@ func deleteTodo(idx int) {
 	}
 }
 
-func editTodo(idx int, newTodo string) {
-	db, err := connect()
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
-
+func (todoDb *todoDb) editTodo(idx int, newTodo string) {
 	title, tags := extractTags(newTodo)
 	tagsJSON, err := json.Marshal(tags)
 	if err != nil {
@@ -268,7 +243,7 @@ func editTodo(idx int, newTodo string) {
 	}
 
 	// Prepare the SQL statement to update the todo title and tags
-	stmt, err := db.Prepare("UPDATE todos SET title = ?, tags = ? WHERE id = ?")
+	stmt, err := todoDb.db.Prepare("UPDATE todos SET title = ?, tags = ? WHERE id = ?")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -342,7 +317,11 @@ func extractTags(todo string) (string, []string) {
 	return title, tags
 }
 
-func connect() (*sql.DB, error) {
+func connect() (*todoDb, error) {
+	if dbInstance != nil {
+		return dbInstance, nil
+	}
+
 	db, err := sql.Open("sqlite3", DB_PATH)
 	if err != nil {
 		return nil, err
@@ -359,7 +338,19 @@ func connect() (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	return db, nil
+
+	// Create indexes for better performance
+	_, err = db.Exec(`CREATE INDEX IF NOT EXISTS idx_todos_done ON todos(done);`)
+	if err != nil {
+		return nil, err
+	}
+	_, err = db.Exec(`CREATE INDEX IF NOT EXISTS idx_todos_created_at ON todos(created_at);`)
+	if err != nil {
+		return nil, err
+	}
+
+	dbInstance = &todoDb{db}
+	return dbInstance, nil
 }
 
 func databasePath() string {

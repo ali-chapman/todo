@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -39,6 +40,11 @@ By default, the database is stored in ~/.config/.todo.db, but you can change thi
 			showCompletedAt: showCompletedAtFlag,
 			showTags:        !hideTagsFlag,
 		}
+		db, err := connect()
+		if err != nil {
+			log.Fatal(err)
+		}
+
 		if editFlag && len(args) > 0 {
 			idx := parseIndex(args)
 
@@ -47,19 +53,19 @@ By default, the database is stored in ~/.config/.todo.db, but you can change thi
 				os.Exit(1)
 			}
 
-			newTodo := args[1]
-			editTodo(idx, newTodo)
+			newTodo := strings.Join(args[1:], " ")
+			db.editTodo(idx, newTodo)
 		} else if completeFlag {
 			idx := parseIndex(args)
-			completeTodo(idx)
+			db.completeTodo(idx)
 		} else if deleteFlag {
 			idx := parseIndex(args)
-			deleteTodo(idx)
+			db.deleteTodo(idx)
 		} else if len(args) > 0 {
 			todo := strings.Join(args, " ")
-			addTodo(todo)
+			db.addTodo(todo)
 		}
-		listTodos(format, tagFilterFlag)
+		db.listTodos(format, tagFilterFlag)
 	},
 }
 
