@@ -1,7 +1,6 @@
 # Todo CLI
 
-A simple command-line todo application built with Go and Cobra that helps you manage your tasks efficiently.
-A simple todo CLI built with Go and Sqlite. 
+A simple todo CLI built with Go and Sqlite.
 
 ## Features
 
