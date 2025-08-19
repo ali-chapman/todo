@@ -37,12 +37,7 @@ var rootCmd = &cobra.Command{
 			showTags:        !hideTagsFlag,
 		}
 		if editFlag && len(args) > 0 {
-			idx, err := strconv.Atoi(args[0])
-
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "Invalid index: %v\n", err)
-				os.Exit(1)
-			}
+			idx := parseIndex(args)
 
 			if len(args) < 2 {
 				fmt.Fprintln(os.Stderr, "Please provide a new todo item to edit.")
