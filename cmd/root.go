@@ -20,7 +20,10 @@ var tagFilterFlag string
 var rootCmd = &cobra.Command{
 	Use:   "todo",
 	Short: "A simple CLI todo application",
-	Long:  "Todo is a command line application that allows you to manage your tasks efficiently.",
+	Long: `Todo is a command line application that allows you to manage your tasks efficiently.
+
+Todos are stored in a SQLite database, and you can add, edit, complete, delete, and list them with various filters.
+By default, the database is stored in ~/.config/.todo.db, but you can change this by setting the TODO_PATH environment variable.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		statusMap := map[string]string{
 			"a":       "all",

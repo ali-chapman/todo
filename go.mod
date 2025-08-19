@@ -1,4 +1,4 @@
-module todo
+module github.com/ali-chapman/todo
 
 go 1.25.0
 
