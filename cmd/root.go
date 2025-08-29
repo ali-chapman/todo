@@ -65,6 +65,9 @@ By default, the database is stored in ~/.config/.todo.db, but you can change thi
 			todo := strings.Join(args, " ")
 			db.addTodo(todo)
 		}
+		if tagFilterFlag == "" {
+			tagFilterFlag = os.Getenv("TODO_TAG")
+		}
 		db.listTodos(format, tagFilterFlag)
 	},
 }
@@ -91,7 +94,7 @@ func init() {
 	rootCmd.Flags().BoolVarP(&showCompletedAtFlag, "completed", "C", false, "Show completion date of todos")
 	rootCmd.Flags().BoolVarP(&hideTagsFlag, "hide-tags", "n", false, "Hide tags of todos")
 	rootCmd.Flags().StringVarP(&statusFlag, "status", "s", "pending", "Filter todos by status (all|a, done|d, pending|p)")
-	rootCmd.Flags().StringVarP(&tagFilterFlag, "tag", "T", "", "Filter todos by tag")
+	rootCmd.Flags().StringVarP(&tagFilterFlag, "tag", "T", "", "Filter todos by tag. If not set then uses TODO_TAG environment variable")
 	rootCmd.Flags().BoolVarP(&deleteFlag, "delete", "x", false, "Delete todo by index")
 }
 

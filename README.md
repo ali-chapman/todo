@@ -98,33 +98,6 @@ todo -n
 todo --hide-tags
 ```
 
-### Examples
-
-```bash
-# Add some todos
-$ todo "Learn Go programming"
-Adding todo: Learn Go programming
-[0]: Learn Go programming
-
-$ todo "Write unit tests"
-Adding todo: Write unit tests
-[0]: Learn Go programming
-[1]: Write unit tests
-
-# Complete a todo
-$ todo -r 0
-Completed: Learn Go programming
-[0]: Write unit tests
-
-# View completed todos with timestamps
-$ todo -d
-[0]: 2024-01-15 10:30:25 - Learn Go programming
-
-# Edit a todo
-$ todo -e 0 "Write comprehensive unit tests"
-[0]: Write comprehensive unit tests
-```
-
 ## Configuration
 
 ### File Locations
@@ -152,4 +125,4 @@ export TODO_PATH="/path/to/your/todo/database_file"
 | `todo -c` | `--created` | Display relative creation time |
 | `todo -C` | `--completed` | Display relative completion time |
 | `todo -n` | `--hide-tags` | Do not display tags for each todo |
-| `todo -T mytag` | `--tag mytag` | Filter todos by tag |
+| `todo -T mytag` | `--tag mytag` | Filter todos by tag. If not set then uses TODO_TAG environment variable |
