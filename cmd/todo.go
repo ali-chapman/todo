@@ -30,26 +30,27 @@ type todo struct {
 	Tags        []string
 }
 
-type todoFormat struct {
+type displayConfig struct {
 	status          string
 	showCreatedAt   bool
 	showCompletedAt bool
 	showTags        bool
+	json            bool
 }
 
 type todoDb struct {
 	db *sql.DB
 }
 
-func (todoDb *todoDb) listTodos(format todoFormat, tagFilter string) {
+func (todoDb *todoDb) listTodos(config displayConfig, tagFilter string) {
 	// Prepare the SQL query
 	query := "SELECT id, title, done, created_at, completed_at, tags FROM todos"
 	var args []any
 
 	conditions := []string{}
-	if format.status != All {
+	if config.status != All {
 		conditions = append(conditions, "done = ?")
-		args = append(args, format.status == Done)
+		args = append(args, config.status == Done)
 	}
 	if tagFilter != "" {
 		conditions = append(conditions, "tags LIKE ?")
@@ -81,7 +82,55 @@ func (todoDb *todoDb) listTodos(format todoFormat, tagFilter string) {
 		log.Fatal(err)
 	}
 
+	printTodos(todos, config)
+}
+
+func printTodos(todos []todo, config displayConfig) {
 	if len(todos) == 0 {
+		return
+	}
+
+	if config.json {
+		type jsonTodo struct {
+			ID          int      `json:"id"`
+			Title       string   `json:"title"`
+			Done        bool     `json:"done"`
+			CreatedAt   string   `json:"created_at"`
+			CompletedAt string   `json:"completed_at"`
+			Tags        []string `json:"tags"`
+		}
+
+		var jsonTodos []jsonTodo
+		for _, t := range todos {
+			jt := jsonTodo{
+				ID:    t.ID,
+				Title: t.Title,
+				Done:  t.Done,
+				Tags:  t.Tags,
+			}
+
+			// Handle CreatedAt null string
+			if t.CreatedAt.Valid {
+				jt.CreatedAt = t.CreatedAt.String
+			} else {
+				jt.CreatedAt = ""
+			}
+
+			// Handle CompletedAt null string
+			if t.CompletedAt.Valid {
+				jt.CompletedAt = t.CompletedAt.String
+			} else {
+				jt.CompletedAt = ""
+			}
+
+			jsonTodos = append(jsonTodos, jt)
+		}
+
+		jsonData, err := json.MarshalIndent(jsonTodos, "", "  ")
+		if err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(string(jsonData))
 		return
 	}
 
@@ -90,42 +139,42 @@ func (todoDb *todoDb) listTodos(format todoFormat, tagFilter string) {
 	defer w.Flush()
 
 	// Print column headers
-	printHeaders(w, format)
+	printHeaders(w, config)
 
 	for _, t := range todos {
-		printTodo(w, t, format)
+		printTodo(w, t, config)
 	}
 }
 
-func printHeaders(w *tabwriter.Writer, format todoFormat) {
+func printHeaders(w *tabwriter.Writer, config displayConfig) {
 	var headers []string
 
-	if format.status == All {
+	if config.status == All {
 		headers = append(headers, "Status")
 	}
 
 	headers = append(headers, "ID")
 	headers = append(headers, "Title")
 
-	if format.showTags {
+	if config.showTags {
 		headers = append(headers, "Tags")
 	}
 
-	if format.showCreatedAt {
+	if config.showCreatedAt {
 		headers = append(headers, "Created")
 	}
 
-	if format.showCompletedAt {
+	if config.showCompletedAt {
 		headers = append(headers, "Completed")
 	}
 
 	fmt.Fprintln(w, strings.Join(headers, "\t"))
 }
 
-func printTodo(w *tabwriter.Writer, t todo, format todoFormat) {
+func printTodo(w *tabwriter.Writer, t todo, config displayConfig) {
 	var columns []string
 
-	if format.status == All {
+	if config.status == All {
 		status := " "
 		if t.Done {
 			status = "x"
@@ -136,12 +185,12 @@ func printTodo(w *tabwriter.Writer, t todo, format todoFormat) {
 	columns = append(columns, fmt.Sprintf("%d", t.ID))
 	columns = append(columns, t.Title)
 
-	if format.showTags {
+	if config.showTags {
 		tagsStr := fmt.Sprintf("%v", t.Tags)
 		columns = append(columns, tagsStr)
 	}
 
-	if format.showCreatedAt {
+	if config.showCreatedAt {
 		var createdAt string = ""
 		if t.CreatedAt.Valid {
 			createdAt = formatRelativeTime(t.CreatedAt.String)
@@ -149,7 +198,7 @@ func printTodo(w *tabwriter.Writer, t todo, format todoFormat) {
 		columns = append(columns, createdAt)
 	}
 
-	if format.showCompletedAt {
+	if config.showCompletedAt {
 		var completedAt string = ""
 		if t.CompletedAt.Valid {
 			completedAt = formatRelativeTime(t.CompletedAt.String)

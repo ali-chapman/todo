@@ -17,6 +17,7 @@ var showCreatedAtFlag bool
 var showCompletedAtFlag bool
 var hideTagsFlag bool
 var tagFilterFlag string
+var jsonFlag bool
 
 var rootCmd = &cobra.Command{
 	Use:   "todo",
@@ -34,11 +35,12 @@ By default, the database is stored in ~/.config/.todo.db, but you can change thi
 			"p":       "pending",
 			"pending": "pending",
 		}
-		format := todoFormat{
+		config := displayConfig{
 			status:          statusMap[statusFlag],
 			showCreatedAt:   showCreatedAtFlag,
 			showCompletedAt: showCompletedAtFlag,
 			showTags:        !hideTagsFlag,
+			json:            jsonFlag,
 		}
 		db, err := connect()
 		if err != nil {
@@ -68,7 +70,7 @@ By default, the database is stored in ~/.config/.todo.db, but you can change thi
 		if tagFilterFlag == "" {
 			tagFilterFlag = os.Getenv("TODO_TAG")
 		}
-		db.listTodos(format, tagFilterFlag)
+		db.listTodos(config, tagFilterFlag)
 	},
 }
 
@@ -96,6 +98,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&statusFlag, "status", "s", "pending", "Filter todos by status (all|a, done|d, pending|p)")
 	rootCmd.Flags().StringVarP(&tagFilterFlag, "tag", "T", "", "Filter todos by tag. If not set then uses TODO_TAG environment variable")
 	rootCmd.Flags().BoolVarP(&deleteFlag, "delete", "x", false, "Delete todo by index")
+	rootCmd.Flags().BoolVar(&jsonFlag, "json", false, "Print todos in JSON format")
 }
 
 func Execute() {
