@@ -35,7 +35,7 @@ type displayConfig struct {
 	showCreatedAt   bool
 	showCompletedAt bool
 	showTags        bool
-	json            bool
+	format          string
 }
 
 type todoDb struct {
@@ -54,7 +54,7 @@ func (todoDb *todoDb) listTodos(config displayConfig, tagFilter string) {
 	}
 	if tagFilter != "" {
 		conditions = append(conditions, "tags LIKE ?")
-		args = append(args, "%\""+tagFilter+"\"%")
+		args = append(args, "%\"%"+tagFilter+"%\"%")
 	}
 
 	if len(conditions) > 0 {
@@ -90,50 +90,21 @@ func printTodos(todos []todo, config displayConfig) {
 		return
 	}
 
-	if config.json {
-		type jsonTodo struct {
-			ID          int      `json:"id"`
-			Title       string   `json:"title"`
-			Done        bool     `json:"done"`
-			CreatedAt   string   `json:"created_at"`
-			CompletedAt string   `json:"completed_at"`
-			Tags        []string `json:"tags"`
-		}
-
-		var jsonTodos []jsonTodo
-		for _, t := range todos {
-			jt := jsonTodo{
-				ID:    t.ID,
-				Title: t.Title,
-				Done:  t.Done,
-				Tags:  t.Tags,
-			}
-
-			// Handle CreatedAt null string
-			if t.CreatedAt.Valid {
-				jt.CreatedAt = t.CreatedAt.String
-			} else {
-				jt.CreatedAt = ""
-			}
-
-			// Handle CompletedAt null string
-			if t.CompletedAt.Valid {
-				jt.CompletedAt = t.CompletedAt.String
-			} else {
-				jt.CompletedAt = ""
-			}
-
-			jsonTodos = append(jsonTodos, jt)
-		}
-
-		jsonData, err := json.MarshalIndent(jsonTodos, "", "  ")
-		if err != nil {
-			log.Fatal(err)
-		}
-		fmt.Println(string(jsonData))
-		return
+	switch config.format {
+	case "json":
+		printJson(todos)
+	case "csv":
+		printCsv(todos)
+	case "txt":
+		printTxt(todos)
+	case "table":
+		printTable(todos, config)
+	default:
+		log.Fatalf("Unknown format: %s", config.format)
 	}
+}
 
+func printTable(todos []todo, config displayConfig) {
 	// Create a tabwriter for aligned output
 	w := tabwriter.NewWriter(os.Stdout, 0, 0, 2, ' ', 0)
 	defer w.Flush()
@@ -144,6 +115,98 @@ func printTodos(todos []todo, config displayConfig) {
 	for _, t := range todos {
 		printTodo(w, t, config)
 	}
+}
+
+func printJson(todos []todo) {
+	type jsonTodo struct {
+		ID          int      `json:"id"`
+		Title       string   `json:"title"`
+		Done        bool     `json:"done"`
+		CreatedAt   string   `json:"created_at"`
+		CompletedAt string   `json:"completed_at"`
+		Tags        []string `json:"tags"`
+	}
+
+	var jsonTodos []jsonTodo
+	for _, t := range todos {
+		jt := jsonTodo{
+			ID:    t.ID,
+			Title: t.Title,
+			Done:  t.Done,
+			Tags:  t.Tags,
+		}
+
+		jt.CreatedAt = unwrapNullString(t.CreatedAt)
+		jt.CompletedAt = unwrapNullString(t.CompletedAt)
+
+		jsonTodos = append(jsonTodos, jt)
+	}
+
+	jsonData, err := json.MarshalIndent(jsonTodos, "", "  ")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(string(jsonData))
+}
+
+func printTxt(todos []todo) {
+	if len(todos) == 0 {
+		return
+	}
+
+	for _, t := range todos {
+		status := " "
+		if t.Done {
+			status = "x"
+		}
+		tagsStr := ""
+		if len(t.Tags) > 0 {
+			tagsStr = " " + strings.Join(t.Tags, " ")
+		}
+		fmt.Printf("- [%s] %s%s\n", status, t.Title, tagsStr)
+	}
+}
+
+func printCsv(todos []todo) {
+	if len(todos) == 0 {
+		return
+	}
+
+	type csvTodo struct {
+		ID          int
+		Title       string
+		Done        bool
+		CreatedAt   string
+		CompletedAt string
+		Tags        string
+	}
+
+	var csvTodos []csvTodo
+	for _, t := range todos {
+		ct := csvTodo{
+			ID:    t.ID,
+			Title: t.Title,
+			Done:  t.Done,
+			Tags:  strings.Join(t.Tags, ","),
+		}
+
+		ct.CreatedAt = unwrapNullString(t.CreatedAt)
+		ct.CompletedAt = unwrapNullString(t.CompletedAt)
+
+		csvTodos = append(csvTodos, ct)
+	}
+
+	fmt.Println("ID,Title,Done,CreatedAt,CompletedAt,Tags")
+	for _, ct := range csvTodos {
+		fmt.Printf("%d,%q,%t,%s,%s,%q\n", ct.ID, ct.Title, ct.Done, ct.CreatedAt, ct.CompletedAt, ct.Tags)
+	}
+}
+
+func unwrapNullString(s sql.NullString) string {
+	if s.Valid {
+		return s.String
+	}
+	return ""
 }
 
 func printHeaders(w *tabwriter.Writer, config displayConfig) {

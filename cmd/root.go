@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/cobra"
 	"log"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 )
@@ -17,7 +18,7 @@ var showCreatedAtFlag bool
 var showCompletedAtFlag bool
 var hideTagsFlag bool
 var tagFilterFlag string
-var jsonFlag bool
+var formatFlag string
 
 var rootCmd = &cobra.Command{
 	Use:   "todo",
@@ -35,12 +36,18 @@ By default, the database is stored in ~/.config/.todo.db, but you can change thi
 			"p":       "pending",
 			"pending": "pending",
 		}
+		validFormats := []string{"table", "json", "csv", "txt"}
+		if !slices.Contains(validFormats, formatFlag) {
+			fmt.Fprintf(os.Stderr, "Invalid format: %s. Valid formats are: %v\n", formatFlag, validFormats)
+			os.Exit(1)
+		}
+
 		config := displayConfig{
 			status:          statusMap[statusFlag],
 			showCreatedAt:   showCreatedAtFlag,
 			showCompletedAt: showCompletedAtFlag,
 			showTags:        !hideTagsFlag,
-			json:            jsonFlag,
+			format:          formatFlag,
 		}
 		db, err := connect()
 		if err != nil {
@@ -98,7 +105,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&statusFlag, "status", "s", "pending", "Filter todos by status (all|a, done|d, pending|p)")
 	rootCmd.Flags().StringVarP(&tagFilterFlag, "tag", "T", "", "Filter todos by tag. If not set then uses TODO_TAG environment variable")
 	rootCmd.Flags().BoolVarP(&deleteFlag, "delete", "x", false, "Delete todo by index")
-	rootCmd.Flags().BoolVar(&jsonFlag, "json", false, "Print todos in JSON format")
+	rootCmd.Flags().StringVarP(&formatFlag, "format", "f", "table", "Output format (table, json, csv, txt)")
 }
 
 func Execute() {
