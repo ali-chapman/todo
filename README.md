@@ -2,6 +2,12 @@
 
 A simple todo CLI built with Go and Sqlite.
 
+*Why did you use Sqlite instead of just text files?*
+
+Honestly just because I wanted to. It also makes it a bit snappier to do the
+filtering. You can use the `--format` flag to customize the output to
+csv, json, or simple text file which you could store in version control.
+
 ## Features
 
 - Add, edit, complete and remove todo items
@@ -135,6 +141,7 @@ todos, and when listing the todos will be filtered by this tag.
 | `todo "item @tag1 @tag2"` | | Add a new todo item with tags |
 | `todo -d <index>` | `--done` | Mark todo at index as complete |
 | `todo -e <index> "text"` | `--edit` | Edit todo at index |
+| `todo -f <string>` | `--format` | Output format (table, json, csv, txt), defaults to "table"
 | `todo -x <index>` | `--remove` | Remove todo at index from database, THIS CANNOT BE UNDONE |
 | `todo -sd` | `--status done` | List completed todos |
 | `todo -sa` | `--status all` | List all todos |
