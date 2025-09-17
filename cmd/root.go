@@ -54,6 +54,8 @@ By default, the database is stored in ~/.config/.todo.db, but you can change thi
 			log.Fatal(err)
 		}
 
+		todoTag := os.Getenv("TODO_TAG")
+
 		if editFlag && len(args) > 0 {
 			idx := parseIndex(args)
 
@@ -71,11 +73,14 @@ By default, the database is stored in ~/.config/.todo.db, but you can change thi
 			idx := parseIndex(args)
 			db.deleteTodo(idx)
 		} else if len(args) > 0 {
+			if todoTag != "" {
+				args = append([]string{"@" + todoTag}, args...)
+			}
 			todo := strings.Join(args, " ")
 			db.addTodo(todo)
 		}
 		if tagFilterFlag == "" {
-			tagFilterFlag = os.Getenv("TODO_TAG")
+			tagFilterFlag = todoTag
 		}
 		db.listTodos(config, tagFilterFlag)
 	},

@@ -110,6 +110,22 @@ You can customize this using an environment variable:
 export TODO_PATH="/path/to/your/todo/database_file"
 ```
 
+### Todo tags
+
+You can add tags to a todo by appending `@` to a word within the new todo, for example:
+```bash
+todo @project1 do something relating to project1 @urgent
+```
+When listing the todo you will see `[project1, urgent]` as the tags on this todo.
+
+You can filter using the `-T` flag:
+```bash
+todo -T urgent
+```
+
+If you set the environment variable TODO_TAG, then this will be added as a tag to all new
+todos, and when listing the todos will be filtered by this tag.
+
 ## Command Reference
 
 | Command | Flag | Description |
